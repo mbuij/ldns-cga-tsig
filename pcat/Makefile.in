@@ -1,0 +1,66 @@
+# Standard installation pathnames
+# See the file LICENSE for the license
+SHELL = @SHELL@
+VERSION = @PACKAGE_VERSION@
+basesrcdir = $(shell basename `pwd`)
+srcdir = @srcdir@
+prefix  = @prefix@
+exec_prefix = @exec_prefix@
+bindir = @bindir@
+mandir = @mandir@
+
+CC = @CC@
+CFLAGS = @CFLAGS@ -Wall -I. 
+CPPFLAGS = @CPPFLAGS@ 
+LDFLAGS = @LDFLAGS@
+LIBS = @LIBS@
+LDNSDIR= @LDNSDIR@
+
+INSTALL = $(srcdir)/../install-sh 
+
+COMPILE         = $(CC) $(CPPFLAGS) $(CFLAGS)
+LINK            = $(CC) $(CFLAGS) $(LDFLAGS)
+LIBS_STC        = -lpcap $(LDNSDIR)/lib/libldns.a -lcrypto -ldl
+
+HEADER		= config.h
+
+.PHONY:	all clean realclean all-static
+
+all:	p
+
+all-static:	pcat-stc pcat-diff-stc pcat-print-stc
+
+p: 	pcat pcat-diff pcat-print
+#	strip pcat
+#	strip pcat-diff
+#	strip pcat-print
+
+pcat: 		pcat.o getdelim.o
+		$(LINK) -o $@ $+ $(LIBS)
+
+pcat-diff: 	pcat-diff.o getdelim.o
+		$(LINK) -o $@ $+ $(LIBS)
+
+pcat-print: 	pcat-print.o getdelim.o
+		$(LINK) -o $@ $+ $(LIBS)
+
+pcat-stc: 	pcat.o getdelim.o
+		$(LINK) -o $(@:-stc=) $+ $(LIBS_STC)
+
+pcat-diff-stc: 	pcat-diff.o getdelim.o
+		$(LINK) -o $(@:-stc=) $+ $(LIBS_STC)
+
+pcat-print-stc: pcat-print.o getdelim.o
+		$(LINK) -o $(@:-stc=) $+ $(LIBS_STC)
+
+clean:
+	rm -f pcat pcat-diff pcat-print
+	rm -f pcat.o pcat-diff.o pcat-print.o
+
+realclean: 	clean
+		rm -f configure config.h config.log config.status
+
+
+## implicit rule
+%.o: 	$(srcdir)/%.c
+	$(COMPILE) -c $<

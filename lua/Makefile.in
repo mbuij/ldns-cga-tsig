@@ -1,0 +1,52 @@
+# Standard installation pathnames
+# See the file LICENSE for the license
+SHELL = @SHELL@
+VERSION = @PACKAGE_VERSION@
+basesrcdir = $(shell basename `pwd`)
+srcdir = @srcdir@
+prefix  = @prefix@
+exec_prefix = @exec_prefix@
+bindir = @bindir@
+mandir = @mandir@
+
+CC = @CC@
+CFLAGS = @CFLAGS@
+LDFLAGS = @LDFLAGS@
+LIBS = @LIBS@
+
+LINT            = splint
+LINTFLAGS       = +quiet -weak -warnposix -unrecog -Din_addr_t=uint32_t -Du_int=unsigned -Du_char=uint8_t
+
+COMPILE         = $(CC) $(CPPFLAGS) $(CFLAGS)
+LINK            = $(CC) $(CFLAGS) $(LDFLAGS) $(LIBS)
+
+HEADER		= config.h
+
+.PHONY:	all clean realclean
+
+all:	lua
+
+lua: 	lua-rns
+
+lua-rns: 	lua-rns.o
+		$(LINK) `lua-config --libs` -o $@ $+
+	
+#lua-rns.o: 	lua-rns.c
+#		$(COMPILE) `lua-config --include` -c $<
+
+## implicit rule
+%.o:    %.c $(HEADER)
+	$(COMPILE) `lua-config --include` -c $<
+
+clean:
+	rm -f *.o
+	rm -f lua-rns
+
+realclean: clean
+	rm -rf autom4te.cache/
+	rm -f config.log config.status aclocal.m4 config.h.in configure Makefile
+	rm -f config.h
+
+lint:
+	$(LINT) $(LINTFLAGS) -I$(srcdir)/.. lua-rns.c ; \
+	if [ $$? -ne 0 ] ; then exit 1 ; fi

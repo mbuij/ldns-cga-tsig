@@ -1,0 +1,61 @@
+# Standard installation pathnames
+# See the file LICENSE for the license
+SHELL = @SHELL@
+VERSION = @PACKAGE_VERSION@
+basesrcdir = $(shell basename `pwd`)
+srcdir = @srcdir@
+prefix  = @prefix@
+exec_prefix = @exec_prefix@
+bindir = @bindir@
+mandir = @mandir@
+
+CC = @CC@
+CFLAGS = @CFLAGS@ -Wall -I. 
+CPPFLAGS = @CPPFLAGS@ 
+LDFLAGS = @LDFLAGS@
+LIBS = @LIBS@
+LDNSDIR = @LDNSDIR@
+
+COMPILE         = $(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $(LIBS)
+
+LINT		= splint
+LINTFLAGS	= +quiet -weak -warnposix -unrecog -Din_addr_t=uint32_t -Du_int=unsigned -Du_char=uint8_t -preproc
+
+HEADER		= config.h
+SOURCES 	= ldns-testns.c nsd-ldnsd.c
+
+PROGRAMS=$(SOURCES:.c=)
+
+.PHONY:	all clean realclean
+
+all:	$(PROGRAMS)
+
+all-static:	$(PROGRAMS:=-stc)
+
+%:	$(srcdir)/%.c
+	$(COMPILE) -o $@ $(srcdir)/$@.c
+
+%-stc:
+	@# can't mix implicit and static rules
+	@if [ $(srcdir)/$(@:-stc=).c -nt $(@:-stc=) ] ; then \
+		echo "$(CC) $(CPPFLAGS) $(CFLAGS) -lpcap -lcrypto -o $(@:-stc=) $(srcdir)/$(@:-stc=).c $(LDNSDIR)/lib/libldns.a" ; \
+		$(CC) $(CPPFLAGS) $(CFLAGS) -lpcap -lcrypto -o $(@:-stc=) $(srcdir)/$(@:-stc=).c $(LDNSDIR)/lib/libldns.a ; \
+	fi ;
+
+lint:
+	for i in $(SOURCES); do \
+		$(LINT) $(LINTFLAGS) -I. -I$(srcdir) $(srcdir)/$$i $(CPPFLAGS); \
+		if [ $$? -ne 0 ] ; then exit 1 ; fi ; \
+	done
+
+clean:
+	rm -f *.o
+	rm -f $(PROGRAMS)
+
+realclean: clean
+	rm -rf autom4te.cache/
+	rm -f config.log config.status aclocal.m4 config.h.in configure Makefile
+	rm -f config.h
+
+confclean: clean
+	rm -rf config.log config.status config.h Makefile
